@@ -50,7 +50,7 @@ A job with a hundred times as many names needs about twice as many outlines. I c
 
 ## The code
 
-The geometry is in [`arch.ts`](arch.ts), which reads the glyph outlines from the font with [fontkit](https://github.com/foliojs/fontkit), shapes each name, and returns one bent outline and one matrix for every letter. Besides the Format SDK, it needs `fontkit` and `@format.dev/fonts`, which is where it reads Format Sans from.
+The helper in [`arch.ts`](arch.ts) reads the glyph outlines from the font with [fontkit](https://github.com/foliojs/fontkit), shapes each name, and returns one bent outline and one matrix for every letter. Besides the Format SDK, it needs `fontkit` and `@format.dev/fonts`, which is where it reads Format Sans from.
 
 The document in [`season-cards.tsx`](season-cards.tsx) draws each letter as an SVG path:
 
@@ -73,7 +73,7 @@ function Name({ member }: { member: Member }) {
 }
 ```
 
-Nothing in the document asks for the outlines to be shared. For two letters that bend alike, `archedLetters` returns the very same path data, and Format stores a repeated path once in the PDF.
+The document has no code for sharing outlines. For two letters that bend alike, `archedLetters` returns the very same path data, and Format stores a repeated path once in the PDF.
 
 The rounding that makes letters bend alike is three lines:
 
@@ -85,13 +85,15 @@ const rung = Math.round(neededBend / step)
 const bend = rung * step
 ```
 
-## Keeping the name findable
+## Keeping the name accessible
 
-The arched letters are artwork, so on their own they would leave a card with no name that a PDF viewer could find. The document therefore writes the name a second time, as the paragraph at the top of the component above.
+The arched letters are artwork, so on their own they would leave a card with no name that a PDF viewer or a screen reader could read. The document therefore writes the name a second time, as the paragraph at the top of the component above.
 
 That paragraph is the same colour as the ribbon and lies underneath it. Because the ribbon is arched, only one horizontal band is covered by it from end to end, and the paragraph sits inside that band. The paragraph doesn't show on any of the 250 cards.
 
-Searching for a name finds the hidden paragraph, and copying a name copies it. The picture is marked `aria-hidden`, which keeps the artwork out of the PDF's tag tree and leaves the paragraph to stand in for it.
+Searching for a name finds the hidden paragraph, and copying a name copies it.
+
+The PDF is tagged, and each card's tags start with that paragraph. The picture is marked `aria-hidden`, so Format writes the arched letters as an artifact, which is how a PDF tells a screen reader to skip them.
 
 ## What ends up in the PDF
 
@@ -142,7 +144,7 @@ Rounding a bend to a step moves the edge of a letter by 0.02 mm at most, and red
 
 ## Limitations
 
-The arched letters are artwork, not text. Selecting a name in a viewer selects the hidden paragraph, so the highlight runs along the middle of the ribbon and not over the letters. Poppler, MuPDF and PDFKit all read the name from the hidden paragraph, and a search in PDFKit finds it. I haven't tried Acrobat.
+The arched letters are artwork, not text. Selecting a name in a viewer selects the hidden paragraph, so the highlight runs along the middle of the ribbon and not over the letters. Poppler, MuPDF and PDFKit all read the name from the hidden paragraph, and a search in PDFKit finds it. I haven't tried Acrobat or a screen reader.
 
 None of these files has been through a RIP. The measurements above come from MuPDF and Poppler, and a press RIP is a different renderer. Run a sample through yours before you commit a job to it.
 
@@ -164,6 +166,8 @@ Each strip redraws the letters it crosses, so a PDF viewer finds repeated or out
 
 ## About Format
 
-[Format](https://format.dev) produced every PDF in this repo. You write a document in React and CSS, and Format paginates it into a PDF. The [Format docs](https://format.dev/docs) explain how documents like these are written and rendered.
+[Format](https://format.dev) produced every PDF in this repo. You write a document in React and CSS, and Format paginates it into a PDF.
 
-I work on Format, which is why the example is built with it. The geometry doesn't depend on Format: any tool that can draw a shape once and place it many times can use the same construction. With Format, the sharing happens without the document asking for it.
+I work on Format, which is why I built the example with it. You can apply the method with another tool: take the outline and the matrix that `arch.ts` returns for each letter, write each distinct outline into the PDF as a form XObject, and draw it with the letter's matrix.
+
+With Format, you don't write the form XObjects. The season-card document draws 3,317 letters as ordinary SVG paths, and Format stores each repeated outline once. The [Format docs](https://format.dev/docs) explain how to write and render a document like this one.

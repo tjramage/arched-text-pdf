@@ -7,7 +7,8 @@ import { archedLetters } from './arch'
 //
 // PDF cannot bend text, and drawing every name as its own outline makes a
 // large file. So each name is drawn one letter at a time, and every letter is
-// an outline that many cards share. The geometry is in `arch.ts`.
+// an outline that many cards share. The helper in `arch.ts` bends the letters
+// and works out where each one goes.
 //
 // The arched letters are artwork, so each card also carries the name as
 // ordinary text, hidden under the ribbon. That copy is what a PDF viewer
